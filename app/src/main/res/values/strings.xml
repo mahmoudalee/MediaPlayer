@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MediaPlayer</string>
+
+    <string name="url">Enter download URL</string>
 </resources>
