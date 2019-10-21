@@ -18,23 +18,19 @@
             android:orientation="horizontal">
 
             <EditText
-                android:id="@+id/editText"
-                android:layout_width="0dp"
-                android:layout_weight="1"
+                android:id="@+id/url"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/s_medium"
                 android:background="@drawable/view"
                 android:hint="@string/url"
                 android:inputType="textWebEditText"
                 android:paddingLeft="@dimen/s_medium"
-                android:paddingRight="@dimen/s_medium" />
+                android:paddingRight="@dimen/s_medium"
+                android:imeOptions="actionDone"
+                />
 
-            <ImageButton
-                android:id="@+id/search"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_search_black_24dp"
-                android:onClick="Search"/>
+
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>

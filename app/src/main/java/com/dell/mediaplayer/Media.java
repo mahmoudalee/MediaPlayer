@@ -1,37 +1,37 @@
 package com.dell.mediaplayer;
 
 public class Media {
-    private String mTitle,mArtist;
-    private Byte[] mImage;
+    private String title, artist;
+    private Byte[] image;
 
-    public Media(String mTitle, String mArtist) {
-        this.mTitle = mTitle;
-        this.mArtist = mArtist;
-      //  this.mImage = mImage;
+    public Media(String title, String artist) {
+        this.title = title;
+        this.artist = artist;
+      //  this.image = image;
     }
 
     public String getTitle() {
-        return mTitle;
+        return title;
     }
 
     public void setTitle(String mTitle) {
-        this.mTitle = mTitle;
+        this.title = mTitle;
     }
 
     public String getArtist() {
-        return mArtist;
+        return artist;
     }
 
     public void setArtist(String mArtist) {
-        this.mArtist = mArtist;
+        this.artist = mArtist;
     }
 
     public Byte[] getImage() {
-        return mImage;
+        return image;
     }
 
     public void setImage(Byte[] mImage) {
-        this.mImage = mImage;
+        this.image = mImage;
     }
 
 

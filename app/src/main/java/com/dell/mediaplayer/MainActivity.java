@@ -1,5 +1,6 @@
 package com.dell.mediaplayer;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -10,13 +11,15 @@ import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.view.View;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -28,16 +31,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.widget.GridLayout.HORIZONTAL;
-
 public class MainActivity extends AppCompatActivity {
 
-    List<Media> mSongs;
+    List<Media> songs;
     EditText link;
-    ImageButton search;
     RecyclerView recycler;
     RecyclerViewAdapter adapter;
-
+    final int PERMISSION_CODE=1;
+    SQLiteHelper sql;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,56 +46,97 @@ public class MainActivity extends AppCompatActivity {
 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this , new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            ActivityCompat.requestPermissions(MainActivity.this , new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_CODE);
         }
 
-        link = findViewById(R.id.editText);
-        search = findViewById(R.id.search);
+        link = findViewById(R.id.url);
 
 
-        mSongs = new ArrayList<>();
+        songs = new ArrayList<>();
+        sql=new SQLiteHelper(this);
 
          /*
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
-        mSongs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new Media("Something right","Katy Perry"));
           */
 
         //setting up recycler view with adapter
         recycler = findViewById(R.id.recycler);
-        adapter = new RecyclerViewAdapter(this, mSongs);
+        adapter = new RecyclerViewAdapter(this, songs);
         recycler.setLayoutManager(new LinearLayoutManager(this));
         recycler.setAdapter(adapter);
         //adding line divider between item views
         DividerItemDecoration itemDecor = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
         itemDecor.setDrawable(getResources().getDrawable(R.drawable.divider));
         recycler.addItemDecoration(itemDecor);
+        //add clicking event to download
+
+        link.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    Search();
+                }
+                return false;
+            }
+        });
+
+
+    }
+    public void sendData() {
+        Cursor dataHolder = sql.readALL();
+        if (dataHolder.getCount() == 0) {
+            return;
+        }
+        try {
+            while (dataHolder.moveToNext()) {
+                //all paths will be stored in this variable in loop
+                //you should bring it to the recycler to be shown and played
+                String path = dataHolder.getString(1);
+
+
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+
+        } finally {
+            dataHolder.close();
+        }
 
     }
 
-    public void Search(View view) {
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode==PERMISSION_CODE&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_DENIED){
+            Toast.makeText(this,"we'll not be able to display or download data",Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void Search() {
         if (!link.getText().toString().isEmpty() && link.getText().toString().contains("http")) {
             new Download(MainActivity.this, link.getText().toString()).execute();
         }else{
-            Toast.makeText(this,"Some thing wrong with URL",Toast.LENGTH_LONG).show();
+            Toast.makeText(this,"Something wrong with URL",Toast.LENGTH_LONG).show();
         }
     }
 
     public class Download extends AsyncTask<Void, Void, String> {
-        ProgressDialog mProgressDialog;
-
+        ProgressDialog progressDialog;
         Context context;
         String url;
         String mp3;
@@ -108,11 +150,11 @@ public class MainActivity extends AppCompatActivity {
 
 
         protected void onPreExecute() {
-            mProgressDialog = new ProgressDialog(context,
+            progressDialog = new ProgressDialog(context,
                     R.style.AppTheme_Dark_Dialog);
-            mProgressDialog.setIndeterminate(true);
-            mProgressDialog.setMessage("Please wait \n Download...");
-            mProgressDialog.show();
+            progressDialog.setIndeterminate(true);
+            progressDialog.setMessage("Please wait \n Download...");
+            progressDialog.show();
         }
 
         @Override
@@ -165,10 +207,12 @@ public class MainActivity extends AppCompatActivity {
 
         protected void onPostExecute(String result) {
             if (result.equals("done")) {
-                mProgressDialog.dismiss();
-                mSongs.add(new Media(mp3,"Katy Perry"));
-                recycler.setAdapter(adapter);
+                progressDialog.dismiss();
 
+                songs.add(new Media(mp3,"Katy Perry"));
+                recycler.setAdapter(adapter);
+                //add paths here
+                //sql.insert(mp3);
                 Toast.makeText(MainActivity.this,"Download finished",Toast.LENGTH_LONG).show();
             }
         }
