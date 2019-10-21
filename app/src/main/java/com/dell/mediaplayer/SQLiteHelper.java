@@ -9,10 +9,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 import androidx.annotation.Nullable;
 
 public class SQLiteHelper extends SQLiteOpenHelper {
-    static String DB_NAME="media";
-    final String TABLE_NAME="media paths";
-    final String ID="ID";
-    final String PATH="paths";
+    static final String DB_NAME="media";
+    static final String TABLE_NAME="mediapaths";
+    static final String ID="id";
+    static final String PATH="paths";
 
     String sql="CREATE TABLE " +TABLE_NAME+"("+ID+" INTEGER PRIMARY KEY AUTOINCREMENT, "+PATH+" TEXT)";
     public SQLiteHelper(@Nullable Context context) {
