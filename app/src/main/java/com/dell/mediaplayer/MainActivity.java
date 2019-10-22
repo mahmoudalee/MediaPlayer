@@ -22,27 +22,40 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dell.mediaplayer.db.Song;
+import com.dell.mediaplayer.db.SongDao;
+import com.dell.mediaplayer.db.SongDatabase;
+import com.dell.mediaplayer.util.DateUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    List<Media> songs;
+//    List<Song> songs;
     EditText link;
     RecyclerView recycler;
     RecyclerViewAdapter adapter;
     final int PERMISSION_CODE=1;
-    SQLiteHelper sql;
+
+
+    private SongDao dao;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        SongDatabase database = SongDatabase.getDatabase(this);
+        dao = database.getDaoInstance();
 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED){
@@ -52,38 +65,28 @@ public class MainActivity extends AppCompatActivity {
         link = findViewById(R.id.url);
 
 
-        songs = new ArrayList<>();
-        sql=new SQLiteHelper(this);
+//        songs = new ArrayList<>();
 
          /*
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
-        songs.add(new Media("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
+        songs.add(new song("Something right","Katy Perry"));
           */
 
-        //setting up recycler view with adapter
-        recycler = findViewById(R.id.recycler);
-        adapter = new RecyclerViewAdapter(this, songs);
-        recycler.setLayoutManager(new LinearLayoutManager(this));
-        recycler.setAdapter(adapter);
-        //adding line divider between item views
-        DividerItemDecoration itemDecor = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
-        itemDecor.setDrawable(getResources().getDrawable(R.drawable.divider));
-        recycler.addItemDecoration(itemDecor);
-        //add clicking event to download
 
+        //add clicking event to download
         link.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -94,30 +97,22 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-    }
-    public void sendData() {
-        Cursor dataHolder = sql.readALL();
-        if (dataHolder.getCount() == 0) {
-            return;
-        }
-        try {
-            while (dataHolder.moveToNext()) {
-                //all paths will be stored in this variable in loop
-                //you should bring it to the recycler to be shown and played
-                String path = dataHolder.getString(1);
-
-
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-
-        } finally {
-            dataHolder.close();
-        }
+        // set up the RecyclerView After Add the Data
+        setupRecyclerView();
 
     }
 
+    private void setupRecyclerView() {
+        //setting up recycler view with adapter
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new RecyclerViewAdapter();
+        recyclerView.setAdapter(adapter);
+        //adding line divider between item views
+//        DividerItemDecoration itemDecor = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
+//        itemDecor.setDrawable(getResources().getDrawable(R.drawable.divider));
+//        recycler.addItemDecoration(itemDecor);
+    }
 
 
     @Override
@@ -140,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         Context context;
         String url;
         String mp3;
+        String PATH;
 
         Download(Context context, String url) {
             this.context = context;
@@ -175,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!f.exists()) {
                     f.mkdirs();
                 }
-                String PATH = Environment.getExternalStoragePublicDirectory(folder_main).toString();
+                PATH = Environment.getExternalStoragePublicDirectory(folder_main).toString();
 
                 Log.v("", "PATH: " + PATH);
                 File file = new File(PATH);
@@ -209,14 +205,73 @@ public class MainActivity extends AppCompatActivity {
             if (result.equals("done")) {
                 progressDialog.dismiss();
 
-                songs.add(new Media(mp3,"Katy Perry"));
-                recycler.setAdapter(adapter);
+
+//                songs.add(new Song(PATH,DateUtils.getCurrentDateTime(),mp3,"Katy Perry"));
+
+                // Add the song to database
+                saveSong(PATH , mp3 ,"Katy Perry" );
+
+                // to refresh the recycler view
+                new FetchData().execute();
+
+//                recycler.setAdapter(adapter);
                 //add paths here
                 //sql.insert(mp3);
                 Toast.makeText(MainActivity.this,"Download finished",Toast.LENGTH_LONG).show();
             }
         }
 
+    }
+
+
+    private void saveSong(String link, String tile, String artist) {
+
+        // still no optimized
+        Song song = new Song(link, DateUtils.getCurrentDateTime(),tile,artist);
+        new InsertSong().execute(song);
+    }
+
+
+    class InsertSong extends AsyncTask<Song,Void,Void>{
+        @Override
+        protected Void doInBackground(Song... songs) {
+            dao.addSong(songs[0]);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Toast.makeText(MainActivity.this, "Done...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    // onStart the app in Second Times Fetch data to show it
+    @Override
+    protected void onStart() {
+        super.onStart();
+        new FetchData().execute();
+    }
+
+
+    class FetchData extends AsyncTask<Void,Void, List<Song>>{
+
+        @Override
+        protected List<Song> doInBackground(Void... voids) {
+
+            // do the query in dao
+            return dao.viewAllSongs();
+
+        }
+
+        @Override
+        protected void onPostExecute(List<Song> songs) {
+            super.onPostExecute(songs);
+
+            // refresh the recycler view
+            adapter.setData(songs);
+        }
     }
 }
 
