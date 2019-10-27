@@ -101,7 +101,20 @@ public class MainActivity extends AppCompatActivity {
     public void Search() {
         if (!url.getText().toString().isEmpty() && url.getText().toString().contains("http") && Patterns.WEB_URL.matcher(url.getText()).matches() && url.getText().toString().contains(".mp3")
         ) {
-            isDownload();
+            //getting folder path to validate whether the file is already downloaded or not
+            String[] splited = url.getText().toString().split("/");
+            String defaultFileName = splited[splited.length - 1];
+            String folder_main = "MediaPlayer";
+            File folder = new File(Environment.getExternalStorageDirectory(), folder_main);
+            if (!folder.exists()) {
+                folder.mkdirs();
+            }
+            String folderPath = Environment.getExternalStoragePublicDirectory(folder_main).toString() + "/";
+            //validating
+            if (new File(folderPath, defaultFileName).exists())
+                isDownload();
+            else new Download(MainActivity.this, url.getText().toString()).execute();
+
 
         } else {
             Toast.makeText(this, "Something is wrong with URL", Toast.LENGTH_LONG).show();
@@ -192,8 +205,7 @@ public class MainActivity extends AppCompatActivity {
 
                 String[] splited = url.split("/");
                 defaultFileName = splited[splited.length - 1];
-                if (defaultFileName == null)
-                    defaultFileName = splited[splited.length - 2];
+
                 int lengthOfFile = c.getContentLength();
                 String folder_main = "MediaPlayer";
                 File folder = new File(Environment.getExternalStorageDirectory(), folder_main);
