@@ -2,6 +2,7 @@ package com.dell.mediaplayer.db;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity
@@ -49,9 +50,6 @@ public class Song {
     @ColumnInfo
     private byte[] image;
 
-
-     Song() {
-    }
 
     public Song(String path, String date, String title, String artist,byte[] image,String url,String duration ) {
         this.link = path;

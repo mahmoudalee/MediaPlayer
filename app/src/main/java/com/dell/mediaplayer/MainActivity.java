@@ -1,14 +1,17 @@
 package com.dell.mediaplayer;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -40,8 +43,8 @@ public class MainActivity extends AppCompatActivity {
     final int PERMISSION_CODE = 1;
     EditText url;
     RecyclerViewAdapter adapter;
+    boolean isDownload;
     private SongDao dao;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,8 +99,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void Search() {
-        if (!url.getText().toString().isEmpty() && url.getText().toString().contains("http")) {
-            new Download(MainActivity.this, url.getText().toString()).execute();
+        if (!url.getText().toString().isEmpty() && url.getText().toString().contains("http") && Patterns.WEB_URL.matcher(url.getText()).matches() && url.getText().toString().contains(".mp3")
+        ) {
+            isDownload();
+
         } else {
             Toast.makeText(this, "Something is wrong with URL", Toast.LENGTH_LONG).show();
         }
@@ -108,6 +113,36 @@ public class MainActivity extends AppCompatActivity {
         // still not optimized
         Song song = new Song(path, DateUtils.getCurrentDateTime(), title, artist, image, url, duration);
         new InsertSong().execute(song);
+    }
+
+    private void isDownload() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+        builder.setTitle("Download song again?");
+        builder.setMessage("song name already exists");
+
+        builder.setPositiveButton("Download", new DialogInterface.OnClickListener() {
+
+            public void onClick(DialogInterface dialog, int which) {
+                new Download(MainActivity.this, url.getText().toString()).execute();
+
+                dialog.dismiss();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(MainActivity.this, "Download canceled", Toast.LENGTH_LONG).show();
+
+                dialog.dismiss();
+            }
+        });
+
+        builder.show();
+
+
     }
 
     // onStart the app in Second Times Fetch data to show it
@@ -142,16 +177,23 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(Void... voids) {
+            String state = "done";
             try {
                 //build connection
-                URL url = new URL(this.url);
-                HttpURLConnection c = (HttpURLConnection) url.openConnection();
+                URL urlName = new URL(this.url);
+                HttpURLConnection c = (HttpURLConnection) urlName.openConnection();
                 c.setRequestMethod("GET");
                 c.setDoOutput(true);
                 c.connect();
 
-                //
-                defaultFileName = "Untitled";
+                if (!(c.getResponseCode() == 200)) {
+                    return "trouble";
+                }
+
+                String[] splited = url.split("/");
+                defaultFileName = splited[splited.length - 1];
+                if (defaultFileName == null)
+                    defaultFileName = splited[splited.length - 2];
                 int lengthOfFile = c.getContentLength();
                 String folder_main = "MediaPlayer";
                 File folder = new File(Environment.getExternalStorageDirectory(), folder_main);
@@ -164,16 +206,17 @@ public class MainActivity extends AppCompatActivity {
                 boolean mkdirs = fileWithPath.mkdirs();
                 Log.v("file state", "mkdirs: " + mkdirs);
 
-                fileName = defaultFileName + " 0.mp3";
-                int i;
+                fileName = defaultFileName;
+                int i = 0;
                 while (new File(fileWithPath, fileName).exists()) {
-                    String[] split = fileName.split(".mp3");
-                    String[] split2 = split[0].split(" ");
-                    i = Integer.parseInt(split2[split2.length - 1]) + 1;
-                    fileName = defaultFileName + " " + i + ".mp3";
+                    String[] split = defaultFileName.split(".mp3");
+                    i++;
+                    fileName = split[0] + " (" + i + ").mp3";
                 }
 
                 Log.i("file state", folderPath + fileName + "");
+
+
                 File outputFile = new File(fileWithPath, fileName);
                 FileOutputStream outputStream = new FileOutputStream(outputFile);
                 InputStream inputStream = c.getInputStream();
@@ -189,17 +232,23 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return "done";
+            return state;
         }
 
 
         protected void onPostExecute(String result) {
-            if (result.equals("done")) {
+            if (result.equals("done"))
                 progressDialog.dismiss();
-
+            else if (result.equals("trouble")) {
+                Toast.makeText(MainActivity.this, "there's a trouble with url", Toast.LENGTH_LONG).show();
+                progressDialog.dismiss();
+                return;
+            }
+            try {
                 //extract data from file
                 MediaMetadataRetriever mmr = new MediaMetadataRetriever();
                 mmr.setDataSource(folderPath + fileName);
+
                 String name = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
                 String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
                 String duration = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
@@ -211,11 +260,6 @@ public class MainActivity extends AppCompatActivity {
                 long seconds = (Long.parseLong(duration) / 1000) % 60;
                 duration = String.format("%02d:%02d", minutes, seconds);
 
-                File from = new File(folderPath, fileName);
-                if (!(name == null)) {
-                    fileName = fileName.replace(defaultFileName, name);
-                    from.renameTo(new File(folderPath, fileName));
-                }
 
                 // Add the song to database
                 saveSong(folderPath + fileName, fileName, artist, imageBytes, url, duration);
@@ -225,8 +269,12 @@ public class MainActivity extends AppCompatActivity {
 
 
                 Toast.makeText(MainActivity.this, "Download finished", Toast.LENGTH_LONG).show();
+            } catch (Exception ex) {
+                Toast.makeText(MainActivity.this, "Something is wrong with this URL", Toast.LENGTH_LONG).show();
             }
+
         }
+
 
     }
 
