@@ -2,5 +2,9 @@
     <string name="app_name">MediaPlayer</string>
 
     <string name="url">Enter download URL</string>
+    <string name="delete">delete</string>
+    <string name="get_url">get URL</string>
+    <string name="open">open image</string>
+    <string name="change">change image</string>
 
 </resources>

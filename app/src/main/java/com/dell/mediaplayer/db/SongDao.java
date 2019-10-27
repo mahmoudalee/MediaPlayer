@@ -10,7 +10,7 @@ import java.util.List;
 public interface SongDao {
 
     @Insert
-    public void addSong(Song song);
+     void addSong(Song song);
 
     @Query("select * from Song")
     List<Song> viewAllSongs();

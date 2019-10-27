@@ -16,16 +16,51 @@ public class Song {
     @ColumnInfo
     private String title;
     @ColumnInfo
-    private String artist;
+    private String url;
 
-    public Song() {
+    public String getDuration() {
+        return duration;
     }
 
-    public Song(String link, String date, String title, String artist ) {
-        this.link = link;
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+    @ColumnInfo
+    private String duration;
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public byte[] getImage() {
+        return image;
+    }
+
+    public void setImage(byte[] image) {
+        this.image = image;
+    }
+
+    @ColumnInfo
+    private String artist;
+    @ColumnInfo
+    private byte[] image;
+
+
+     Song() {
+    }
+
+    public Song(String path, String date, String title, String artist,byte[] image,String url,String duration ) {
+        this.link = path;
         this.date = date;
         this.title = title;
         this.artist = artist;
+        this.image=image;
+        this.url=url;
+        this.duration=duration;
     }
 
     public Song(int _id, String link, String date, String title, String artist) {
@@ -36,27 +71,27 @@ public class Song {
         this.artist = artist;
     }
 
-    public int get_id() {
+     int get_id() {
         return _id;
     }
 
-    public void set_id(int _id) {
+     void set_id(int _id) {
         this._id = _id;
     }
 
-    public String getLink() {
+     String getLink() {
         return link;
     }
 
-    public void setLink(String link) {
+     void setLink(String link) {
         this.link = link;
     }
 
-    public String getDate() {
+     String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+     void setDate(String date) {
         this.date = date;
     }
 
@@ -64,7 +99,7 @@ public class Song {
         return title;
     }
 
-    public void setTitle(String title) {
+     void setTitle(String title) {
         this.title = title;
     }
 
@@ -72,7 +107,7 @@ public class Song {
         return artist;
     }
 
-    public void setArtist(String artist) {
+     void setArtist(String artist) {
         this.artist = artist;
     }
 }
